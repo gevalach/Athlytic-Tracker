@@ -1,0 +1,312 @@
+
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: var(--font-sans); }
+  .app { padding: 1rem 0; max-width: 700px; }
+  .tabs { display: flex; gap: 8px; margin-bottom: 1.5rem; }
+  .tab { padding: 6px 16px; border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-md); font-size: 13px; cursor: pointer; background: transparent; color: var(--color-text-secondary); }
+  .tab.active { background: var(--color-background-secondary); color: var(--color-text-primary); font-weight: 500; border-color: var(--color-border-primary); }
+  .card { background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); padding: 1rem 1.25rem; margin-bottom: 1rem; }
+  .section-label { font-size: 11px; color: var(--color-text-tertiary); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 0.75rem; }
+  .upload-zone { border: 1px dashed var(--color-border-secondary); border-radius: var(--border-radius-md); padding: 2rem; text-align: center; cursor: pointer; }
+  .upload-zone:hover { background: var(--color-background-secondary); }
+  .upload-zone input { display: none; }
+  .upload-label { font-size: 13px; color: var(--color-text-secondary); margin-top: 8px; display: block; }
+  .metrics-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 1rem; }
+  .metric { background: var(--color-background-secondary); border-radius: var(--border-radius-md); padding: 0.75rem; }
+  .metric-label { font-size: 11px; color: var(--color-text-tertiary); text-transform: uppercase; letter-spacing: 0.05em; }
+  .metric-value { font-size: 22px; font-weight: 500; color: var(--color-text-primary); margin-top: 4px; }
+  .metric-sub { font-size: 12px; color: var(--color-text-secondary); margin-top: 2px; }
+  .status { font-size: 13px; padding: 6px 10px; border-radius: var(--border-radius-md); margin-top: 10px; }
+  .status.loading { background: var(--color-background-info); color: var(--color-text-info); }
+  .status.success { background: var(--color-background-success); color: var(--color-text-success); }
+  .status.error { background: var(--color-background-danger); color: var(--color-text-danger); }
+  .history-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 0.5px solid var(--color-border-tertiary); font-size: 13px; }
+  .history-row:last-child { border-bottom: none; }
+  .history-date { color: var(--color-text-secondary); font-size: 12px; }
+  .badge { font-size: 11px; padding: 2px 8px; border-radius: 99px; }
+  .badge-recovery { background: var(--color-background-success); color: var(--color-text-success); }
+  .badge-workout { background: var(--color-background-info); color: var(--color-text-info); }
+  .insight-box { background: var(--color-background-secondary); border-radius: var(--border-radius-md); padding: 1rem; font-size: 14px; line-height: 1.7; color: var(--color-text-primary); white-space: pre-wrap; min-height: 60px; }
+  .btn { padding: 7px 16px; border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-md); font-size: 13px; cursor: pointer; background: transparent; color: var(--color-text-primary); }
+  .btn:hover { background: var(--color-background-secondary); }
+  .btn-primary { background: var(--color-text-primary); color: var(--color-background-primary); border-color: var(--color-text-primary); }
+  .btn-primary:hover { opacity: 0.85; }
+  .empty { text-align: center; padding: 2rem; color: var(--color-text-tertiary); font-size: 13px; }
+  .pill-row { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+  .pill { font-size: 11px; padding: 3px 10px; border-radius: 99px; border: 0.5px solid var(--color-border-tertiary); color: var(--color-text-secondary); }
+  .extracted-preview { margin-top: 1rem; }
+  textarea { width: 100%; border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-md); font-size: 13px; font-family: var(--font-sans); padding: 8px 10px; background: var(--color-background-primary); color: var(--color-text-primary); resize: vertical; min-height: 60px; }
+  select { border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-md); font-size: 13px; padding: 6px 10px; background: var(--color-background-primary); color: var(--color-text-primary); }
+  .row { display: flex; gap: 10px; align-items: center; }
+  .delete-btn { font-size: 11px; color: var(--color-text-danger); cursor: pointer; border: none; background: none; padding: 2px 6px; }
+  .delete-btn:hover { text-decoration: underline; }
+</style>
+
+<div class="app">
+  <div class="tabs">
+    <button class="tab active" onclick="showTab('upload')">Log today</button>
+    <button class="tab" onclick="showTab('history')">History</button>
+    <button class="tab" onclick="showTab('insights')">Insights</button>
+  </div>
+
+  <div id="tab-upload">
+    <div class="card">
+      <div class="section-label">Upload Athlytic screenshot</div>
+      <div class="upload-zone" onclick="document.getElementById('fileInput').click()">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" style="opacity:0.4;margin:auto;">
+          <path d="M12 4v12M8 8l4-4 4 4M4 18h16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+        <span class="upload-label">Click to upload a daily summary or workout screenshot</span>
+        <input type="file" id="fileInput" accept="image/*" onchange="handleUpload(event)">
+      </div>
+      <div id="uploadStatus"></div>
+    </div>
+
+    <div id="extractedCard" style="display:none;" class="card">
+      <div class="section-label">Extracted data</div>
+      <div class="metrics-grid" id="metricsGrid"></div>
+      <div class="extracted-preview">
+        <p style="font-size:12px;color:var(--color-text-secondary);margin-bottom:6px;">Notes (optional)</p>
+        <textarea id="notesInput" placeholder="Add any context about today..."></textarea>
+      </div>
+      <div style="margin-top:12px;display:flex;gap:8px;">
+        <button class="btn btn-primary" onclick="saveEntry()">Save entry</button>
+        <button class="btn" onclick="resetUpload()">Cancel</button>
+      </div>
+      <div id="saveStatus"></div>
+    </div>
+  </div>
+
+  <div id="tab-history" style="display:none;">
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
+        <div class="section-label" style="margin:0;">All entries</div>
+        <div class="row">
+          <select id="filterType" onchange="renderHistory()">
+            <option value="all">All types</option>
+            <option value="daily">Daily summary</option>
+            <option value="workout">Workout</option>
+          </select>
+          <button class="btn" style="font-size:12px;" onclick="clearAll()">Clear all</button>
+        </div>
+      </div>
+      <div id="historyList"></div>
+    </div>
+  </div>
+
+  <div id="tab-insights" style="display:none;">
+    <div class="card">
+      <div class="section-label">Ask about your data</div>
+      <div class="pill-row" id="quickPrompts">
+        <span class="pill" style="cursor:pointer;" onclick="runInsight('Summarize my recent trends in recovery and sleep.')">Recovery trend</span>
+        <span class="pill" style="cursor:pointer;" onclick="runInsight('How are my workouts correlating with my recovery scores?')">Workout vs recovery</span>
+        <span class="pill" style="cursor:pointer;" onclick="runInsight('What patterns do you see in my data? Any concerns?')">Overall patterns</span>
+        <span class="pill" style="cursor:pointer;" onclick="runInsight('Am I overtraining based on my recent history?')">Overtraining check</span>
+      </div>
+      <div style="margin-top:12px;display:flex;gap:8px;">
+        <textarea id="insightQuery" placeholder="Ask anything about your training history..." style="min-height:44px;flex:1;"></textarea>
+        <button class="btn btn-primary" style="align-self:flex-end;" onclick="runInsight()">Ask ↗</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="section-label">Analysis</div>
+      <div class="insight-box" id="insightBox">Your insights will appear here once you have some data logged.</div>
+    </div>
+  </div>
+</div>
+
+<script>
+let pendingEntry = null;
+const STORAGE_KEY = 'athlytic_entries';
+
+async function loadEntries() {
+  try {
+    const r = await window.storage.get(STORAGE_KEY);
+    return r ? JSON.parse(r.value) : [];
+  } catch { return []; }
+}
+
+async function saveEntries(entries) {
+  await window.storage.set(STORAGE_KEY, JSON.stringify(entries));
+}
+
+function showTab(name) {
+  ['upload','history','insights'].forEach(t => {
+    document.getElementById('tab-'+t).style.display = t === name ? 'block' : 'none';
+    document.querySelectorAll('.tab')[['upload','history','insights'].indexOf(t)].classList.toggle('active', t === name);
+  });
+  if (name === 'history') renderHistory();
+}
+
+async function handleUpload(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const status = document.getElementById('uploadStatus');
+  status.innerHTML = '<div class="status loading">Reading screenshot with Claude...</div>';
+
+  const base64 = await new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = () => res(r.result.split(',')[1]);
+    r.onerror = rej;
+    r.readAsDataURL(file);
+  });
+
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        messages: [{
+          role: 'user',
+          content: [
+            { type: 'image', source: { type: 'base64', media_type: file.type || 'image/jpeg', data: base64 } },
+            { type: 'text', text: `Extract all data from this Athlytic app screenshot. Return ONLY a JSON object with these fields (use null if not visible):
+{
+  "date": "YYYY-MM-DD",
+  "type": "daily" or "workout",
+  "recovery_pct": number or null,
+  "sleep_pct": number or null,
+  "readiness_score": number or null,
+  "readiness_label": string or null,
+  "workout_type": string or null,
+  "effort_score": number or null,
+  "effort_label": string or null
+}
+Return only the JSON, no other text.` }
+          ]
+        }]
+      })
+    });
+    const data = await resp.json();
+    const text = data.content.map(b => b.text || '').join('');
+    const clean = text.replace(/```json|```/g, '').trim();
+    const parsed = JSON.parse(clean);
+    pendingEntry = parsed;
+    status.innerHTML = '';
+    showExtracted(parsed);
+  } catch(err) {
+    status.innerHTML = `<div class="status error">Could not extract data. Try a clearer screenshot.</div>`;
+  }
+}
+
+function showExtracted(d) {
+  const grid = document.getElementById('metricsGrid');
+  const metrics = [];
+  if (d.recovery_pct != null) metrics.push({ label: 'Recovery', value: d.recovery_pct + '%', sub: '' });
+  if (d.sleep_pct != null) metrics.push({ label: 'Sleep', value: d.sleep_pct + '%', sub: '' });
+  if (d.readiness_score != null) metrics.push({ label: 'Readiness', value: d.readiness_score, sub: d.readiness_label || '' });
+  if (d.effort_score != null) metrics.push({ label: 'Effort', value: d.effort_score, sub: d.effort_label || '' });
+  if (d.workout_type) metrics.push({ label: 'Activity', value: d.workout_type, sub: '' });
+  if (d.date) metrics.push({ label: 'Date', value: d.date, sub: d.type || '' });
+
+  grid.innerHTML = metrics.map(m => `
+    <div class="metric">
+      <div class="metric-label">${m.label}</div>
+      <div class="metric-value">${m.value}</div>
+      ${m.sub ? `<div class="metric-sub">${m.sub}</div>` : ''}
+    </div>
+  `).join('');
+  document.getElementById('extractedCard').style.display = 'block';
+}
+
+async function saveEntry() {
+  if (!pendingEntry) return;
+  const notes = document.getElementById('notesInput').value;
+  if (notes) pendingEntry.notes = notes;
+  pendingEntry.saved_at = new Date().toISOString();
+
+  const entries = await loadEntries();
+  entries.unshift(pendingEntry);
+  await saveEntries(entries);
+
+  document.getElementById('saveStatus').innerHTML = '<div class="status success">Entry saved.</div>';
+  setTimeout(() => { resetUpload(); showTab('history'); }, 900);
+}
+
+function resetUpload() {
+  pendingEntry = null;
+  document.getElementById('extractedCard').style.display = 'none';
+  document.getElementById('uploadStatus').innerHTML = '';
+  document.getElementById('notesInput').value = '';
+  document.getElementById('fileInput').value = '';
+}
+
+async function renderHistory() {
+  const entries = await loadEntries();
+  const filter = document.getElementById('filterType').value;
+  const filtered = filter === 'all' ? entries : entries.filter(e => e.type === filter);
+  const list = document.getElementById('historyList');
+
+  if (!filtered.length) {
+    list.innerHTML = '<div class="empty">No entries yet. Upload a screenshot to get started.</div>';
+    return;
+  }
+
+  list.innerHTML = filtered.map((e, i) => `
+    <div class="history-row">
+      <div>
+        <div style="font-weight:500;font-size:13px;">${e.date || 'Unknown date'}</div>
+        <div class="history-date">${e.type === 'workout' ? (e.workout_type || 'Workout') : 'Daily summary'}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        ${e.recovery_pct != null ? `<span class="badge badge-recovery">R ${e.recovery_pct}%</span>` : ''}
+        ${e.sleep_pct != null ? `<span class="badge badge-recovery">S ${e.sleep_pct}%</span>` : ''}
+        ${e.readiness_score != null ? `<span class="badge badge-workout">${e.readiness_score}</span>` : ''}
+        ${e.effort_score != null ? `<span class="badge badge-workout">Effort ${e.effort_score}</span>` : ''}
+        <button class="delete-btn" onclick="deleteEntry(${i})">remove</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+async function deleteEntry(idx) {
+  const entries = await loadEntries();
+  const filter = document.getElementById('filterType').value;
+  const filtered = filter === 'all' ? entries : entries.filter(e => e.type === filter);
+  const target = filtered[idx];
+  const newEntries = entries.filter(e => e !== target);
+  await saveEntries(newEntries);
+  renderHistory();
+}
+
+async function clearAll() {
+  if (!confirm('Delete all entries?')) return;
+  await saveEntries([]);
+  renderHistory();
+}
+
+async function runInsight(preset) {
+  const query = preset || document.getElementById('insightQuery').value.trim();
+  if (!query) return;
+  const entries = await loadEntries();
+  if (!entries.length) {
+    document.getElementById('insightBox').textContent = 'No data yet — upload some screenshots first.';
+    return;
+  }
+  const box = document.getElementById('insightBox');
+  box.textContent = 'Analyzing...';
+
+  const dataStr = JSON.stringify(entries, null, 2);
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        messages: [{
+          role: 'user',
+          content: `Here is my Athlytic fitness tracking history:\n\n${dataStr}\n\nQuestion: ${query}\n\nBe direct, specific, and data-driven. No fluff.`
+        }]
+      })
+    });
+    const data = await resp.json();
+    box.textContent = data.content.map(b => b.text || '').join('');
+  } catch {
+    box.textContent = 'Error fetching analysis. Please try again.';
+  }
+}
+</script>
